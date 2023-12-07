@@ -4,9 +4,11 @@ namespace App\Controller;
 
 use App\Entity\Product;
 use App\Repository\ProductRepository;
+use App\Service\CurrencyService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class ProductController extends AbstractController
 {
@@ -20,14 +22,16 @@ class ProductController extends AbstractController
     }
 
     #[Route('/product/{id}', name: 'app_product_details')]
-    public function show(Product $product): Response
+    public function show(Product $product, CurrencyService $currencyService): Response
     {
-        //TODO : Convert price of the product into dollar and yen, and send it to the twig template
-
+        $dollarPrice = $currencyService->convertEurToDollar($product->getPrice());
+        $yenPrice = $currencyService->convertEurToYen($product->getPrice());
+    
         return $this->render('product/details.html.twig', [
             'product' => $product,
-            'dollar_price' => 0,
-            'yen_price' => 0,
+            'dollar_price' => $dollarPrice,
+            'yen_price' => $yenPrice,
         ]);
     }
+    
 }
