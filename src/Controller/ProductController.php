@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Entity\Product;
 use App\Repository\ProductRepository;
-use App\Service\CurrencyService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -22,10 +21,27 @@ class ProductController extends AbstractController
     }
 
     #[Route('/product/{id}', name: 'app_product_details')]
-    public function show(Product $product, CurrencyService $currencyService): Response
+    public function show(Product $product, HttpClientInterface $client): Response
     {
-        $dollarPrice = $currencyService->convertEurToDollar($product->getPrice());
-        $yenPrice = $currencyService->convertEurToYen($product->getPrice());
+        $responseDollar = $client->request(
+            'GET',
+            'https://v6.exchangerate-api.com/v6/' 
+                . $_ENV['CURRENCY_KEY'] 
+                . '/pair/EUR/USD/' 
+                . $product->getPrice()
+        );
+        $contentDollar = $responseDollar->toArray();
+        $dollarPrice = $contentDollar['conversion_result'];
+    
+        $responseYen = $client->request(
+            'GET',
+            'https://v6.exchangerate-api.com/v6/' 
+                . $_ENV['CURRENCY_KEY'] 
+                . '/pair/EUR/JPY/' 
+                . $product->getPrice()
+        );
+        $contentYen = $responseYen->toArray();
+        $yenPrice = $contentYen['conversion_result'];
     
         return $this->render('product/details.html.twig', [
             'product' => $product,
@@ -33,5 +49,6 @@ class ProductController extends AbstractController
             'yen_price' => $yenPrice,
         ]);
     }
+    
     
 }
